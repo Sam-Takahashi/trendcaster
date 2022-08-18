@@ -2,7 +2,7 @@
 import type { NextApiRequest, NextApiResponse } from "next";
 import axios from "axios";
 import { MongoClient, ServerApiVersion } from "mongodb";
-import seedData from "../../../../testdata/profile_count.json";
+import seedData from "../../../../testdata/profile_details.json";
 
 type Data = {
   name: string;
@@ -24,6 +24,7 @@ export default async function handler(
     return;
   }
 
+  const username = req.query.username;
   const mongodbURL = process.env.NEXT_MONGODB_URI;
   if (!mongodbURL) {
     return { props: { response: "" } };
@@ -42,41 +43,31 @@ export default async function handler(
     const db = client.db("farcaster");
 
     // Order by desc and last 10 days
-    const profileCounts = await db
-      .collection("profiles_count")
-      .find()
-      .sort({ time: -1 })
-      .limit(10)
+    const castsCount = await db
+      .collection("profile_details")
+      .find({ username: username })
       .toArray()
       .catch(() => {
-        console.error("Error getting number of profiles from MongoDB");
+        console.error("Error getting number of casts from MongoDB");
         return null;
       });
 
-    if (!profileCounts) {
+    if (!castsCount) {
       return { props: { response: "" } };
     }
 
-    const labels = [];
-    const countArray = [];
-    for (let eachCount of profileCounts.reverse()) {
-      labels.push(new Date(eachCount.time).toLocaleDateString("eb-US"));
-      countArray.push(eachCount.count);
-    }
-    const data = {
-      labels,
-      datasets: [
-        {
-          label: "Profiles",
-          data: countArray,
-          borderColor: "rgb(255, 99, 132)",
-          backgroundColor: "rgba(255, 99, 132, 0.5)",
-        },
-      ],
+    const response = {
+      username: username,
+      count: castsCount[0].castCount,
+      farcasterAddress: castsCount[0].farcasterAddress,
+      recastCount: castsCount[0].recastCount,
+      firstCastCounnt: new Date(
+        castsCount[0].firstCasteDate
+      ).toLocaleTimeString(),
     };
-    // console.log(result)
+
     client.close();
-    res.status(200).json(data);
+    res.status(200).json(response);
   } catch (error) {
     client.close();
     console.log(error);
