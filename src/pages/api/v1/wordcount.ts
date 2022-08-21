@@ -3,6 +3,7 @@ import type { NextApiRequest, NextApiResponse } from "next";
 import axios from "axios";
 import { MongoClient, ServerApiVersion } from "mongodb";
 import seedData from "../../../../testdata/word_count.json";
+import { connectToDatabase } from "../../../../util/mongodb";
 
 type Data = {
   name: string;
@@ -24,22 +25,8 @@ export default async function handler(
     return;
   }
 
-  const mongodbURL = process.env.NEXT_MONGODB_URI;
-  if (!mongodbURL) {
-    return { props: { response: "" } };
-  }
-  const client = new MongoClient(mongodbURL, {
-    serverApi: ServerApiVersion.v1,
-  });
-
-  client.connect((err) => {
-    if (err) {
-      console.error(err);
-      return { props: { response: "" } };
-    }
-  });
   try {
-    const db = client.db("farcaster");
+    const { db } = await connectToDatabase();
 
     // Order by desc and last 10 days
     const wordCount = await db
@@ -50,7 +37,7 @@ export default async function handler(
       .toArray()
       .catch(() => {
         console.error("Error getting number of casts from MongoDB");
-        client.close();
+        // client.close();
         return null;
       });
 
@@ -63,10 +50,10 @@ export default async function handler(
       cleanWC.push({ word: eachWord.word });
     }
 
-    client.close();
+    // client.close();
     res.status(200).json(cleanWC);
   } catch (error) {
-    client.close();
+    // client.close();
     console.log(error);
     return res.status(500).end(error);
   }

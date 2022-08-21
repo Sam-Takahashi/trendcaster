@@ -30,10 +30,9 @@ export default async function handler(
 
     // Order by desc and last 10 days
     const castsCount = await db
-      .collection("casts_count")
+      .collection("casts_30days")
       .find()
-      .sort({ time: -1 })
-      .limit(10)
+      .sort({ dateInMs: 1 })
       .toArray()
       .catch(() => {
         console.error("Error getting number of casts from MongoDB");
@@ -46,8 +45,8 @@ export default async function handler(
 
     const labels = [];
     const countArray = [];
-    for (let eachCount of castsCount.reverse()) {
-      labels.push(new Date(eachCount.time).toLocaleString());
+    for (let eachCount of castsCount) {
+      labels.push(eachCount.date);
       countArray.push(eachCount.count);
     }
     const data = {
@@ -56,8 +55,8 @@ export default async function handler(
         {
           label: "Casts",
           data: countArray,
-          borderColor: "rgb(71, 210, 252)",
-          backgroundColor: "rgba(71, 210, 252, 0.5)",
+          borderColor: "rgb(67, 230, 110)",
+          backgroundColor: "rgba(67, 230, 110, 0.5)",
         },
       ],
     };

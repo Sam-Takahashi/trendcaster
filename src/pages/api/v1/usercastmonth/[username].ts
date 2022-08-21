@@ -2,8 +2,8 @@
 import type { NextApiRequest, NextApiResponse } from "next";
 import axios from "axios";
 import { MongoClient, ServerApiVersion } from "mongodb";
-import seedData from "../../../../testdata/cast_count.json";
-import { connectToDatabase } from "../../../../util/mongodb";
+import seedData from "../../../../../testdata/cast_count.json";
+import { connectToDatabase } from "../../../../../util/mongodb";
 
 type Data = {
   name: string;
@@ -24,16 +24,14 @@ export default async function handler(
     }
     return;
   }
-
+  const username = req.query.username;
   try {
     const { db } = await connectToDatabase();
 
     // Order by desc and last 10 days
     const castsCount = await db
-      .collection("casts_count")
-      .find()
-      .sort({ time: -1 })
-      .limit(10)
+      .collection("users_casts_30days")
+      .find({ user: username })
       .toArray()
       .catch(() => {
         console.error("Error getting number of casts from MongoDB");
@@ -46,8 +44,8 @@ export default async function handler(
 
     const labels = [];
     const countArray = [];
-    for (let eachCount of castsCount.reverse()) {
-      labels.push(new Date(eachCount.time).toLocaleString());
+    for (let eachCount of castsCount[0].casts.reverse()) {
+      labels.push(eachCount.date);
       countArray.push(eachCount.count);
     }
     const data = {
@@ -56,8 +54,8 @@ export default async function handler(
         {
           label: "Casts",
           data: countArray,
-          borderColor: "rgb(71, 210, 252)",
-          backgroundColor: "rgba(71, 210, 252, 0.5)",
+          borderColor: "rgb(67, 230, 110)",
+          backgroundColor: "rgba(67, 230, 110, 0.5)",
         },
       ],
     };
